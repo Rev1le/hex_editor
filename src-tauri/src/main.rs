@@ -6,6 +6,8 @@
 mod stream_file;
 mod error;
 
+use wfd::{DialogParams, FOS_PICKFOLDERS};
+
 use tauri::{self, State};
 use std::{
   fs,
@@ -39,7 +41,7 @@ use stream_file::FileChunks;
 //     }
 //   }
 // }
-/*
+
 type HexEditor = Mutex<Option<OpenFile>>;
 
 #[derive(Debug, Clone)]
@@ -111,8 +113,11 @@ impl StreamOpenFile {
 }
 
 #[tauri::command]
-fn open_file(editor: State<HexEditor>, path: String) {
-  *editor.lock().unwrap() = Some(OpenFile::new(&Path::new(&path)));
+fn open_file(editor: State<HexEditor>) {
+
+  let result = wfd::open_dialog(Default::default()).unwrap().selected_file_path;
+  println!("{:?}", result);
+  *editor.lock().unwrap() = Some(OpenFile::new(&result));
   println!("Открыт файл: {:?}", editor.lock().unwrap().as_ref().unwrap().file_path());
 }
 
@@ -153,27 +158,26 @@ fn get_bytes_chunks(editor: State<HexEditor>) -> Vec<Vec<u8>> {
   };
 }
 
- */
 
 
 fn main() {
 
-  let mut file_chunks = FileChunks::new("C:\\Users\\nikiy\\Documents\\FPSMonitor.txt", 16).unwrap();
-  println!("{:?}", file_chunks.get_chunk_by_pos(0).unwrap());
-  println!("{:?}", file_chunks.get_chunk_by_pos(10).unwrap());
-
-  println!("{:?}", file_chunks.stream_position());
-
-  println!("{:?}", file_chunks.get_chunk_by_pos(0).unwrap());
-
-  println!("{:?}", file_chunks.next_chunk().unwrap());
-  println!("{:?}", file_chunks.next_chunk().unwrap());
-
-  println!("{:?}", file_chunks.stream_position().unwrap());
-  
-  println!("{:?}", file_chunks.pred_chunk().unwrap());
-
-  println!("{:?}", file_chunks.stream_position());
+  // let mut file_chunks = FileChunks::new("C:\\Users\\nikiy\\Documents\\FPSMonitor.txt", 16).unwrap();
+  // println!("{:?}", file_chunks.get_chunk_by_pos(0).unwrap());
+  // println!("{:?}", file_chunks.get_chunk_by_pos(10).unwrap());
+  //
+  // println!("{:?}", file_chunks.stream_position());
+  //
+  // println!("{:?}", file_chunks.get_chunk_by_pos(0).unwrap());
+  //
+  // println!("{:?}", file_chunks.next_chunk().unwrap());
+  // println!("{:?}", file_chunks.next_chunk().unwrap());
+  //
+  // println!("{:?}", file_chunks.stream_position().unwrap());
+  //
+  // println!("{:?}", file_chunks.pred_chunk().unwrap());
+  //
+  // println!("{:?}", file_chunks.stream_position());
 
   tauri::Builder::default()
       .manage(Mutex::new(None::<OpenFile>))
