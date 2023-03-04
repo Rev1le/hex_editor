@@ -42,7 +42,7 @@ use stream_file::FileChunks;
 //   }
 // }
 
-type HexEditor = Mutex<Option<OpenFile>>;
+type HexEditor = Mutex<Option<FileChunks>>;
 
 #[derive(Debug, Clone)]
 struct OpenFile {
@@ -112,77 +112,92 @@ impl StreamOpenFile {
   }
 }
 
-#[tauri::command]
-fn open_file(editor: State<HexEditor>) {
+#[tauri::command(rename_all = "snake_case")]
+fn open_file(editor: State<HexEditor>, chunk_size: usize) -> bool {
 
-  let result = wfd::open_dialog(Default::default()).unwrap().selected_file_path;
-  println!("{:?}", result);
-  *editor.lock().unwrap() = Some(OpenFile::new(&result));
-  println!("Открыт файл: {:?}", editor.lock().unwrap().as_ref().unwrap().file_path());
-}
+  if let Ok(open_dialog) = wfd::open_dialog(Default::default()) {
+    let path = open_dialog.selected_file_path;
+    *editor.lock().unwrap() = Some( FileChunks::new(path.clone(), chunk_size).unwrap());
 
-#[tauri::command]
-fn get_file_bytes(editor: State<HexEditor>) -> Vec<u8> {
+    println!("Открыт файл по пути: {:?}", path);
 
-  return if let Some(open_file) = editor.lock().unwrap().as_ref() {
-    open_file.get_bytes().clone()
-  } else {
-    vec![]
+    return true
   }
 
+  false
 }
 
 #[tauri::command]
-fn get_file_str(editor: State<HexEditor>) -> String{
-
-  return if let Some(open_file) = editor.lock().unwrap().as_ref() {
-    open_file.content_as_str()
-  } else {
-    String::new()
-  }
-
+fn get_chunk_by_pos(editor: State<HexEditor>, pos: usize) -> Vec<u8> {
+	if let Some(editor) = editor.lock().unwrap().as_mut() {
+		return editor.get_chunk_by_pos(pos).unwrap().0.clone()
+	}
+	println!("Файл ещё не открыт");
+	vec![]
 }
 
+#[tauri::command]
+fn get_chunk_pos(editor: State<HexEditor>) -> usize {
+	if let Some(editor) = editor.lock().unwrap().as_mut() {
+		return editor.get_chunk_pos()
+	}
+	println!("Файл ещё не открыт");
+	0
+}
 
 #[tauri::command]
-fn get_bytes_chunks(editor: State<HexEditor>) -> Vec<Vec<u8>> {
+fn next_chunk(editor: State<HexEditor>) -> Vec<u8> {
+	if let Some(editor) = editor.lock().unwrap().as_mut() {
+		return editor.next_chunk().unwrap().0.clone()
+	}
+	println!("Файл ещё не открыт");
+	vec![]
+}
 
-  return if let Some(open_file) = editor.lock().unwrap().as_ref() {
-    open_file
-        .get_bytes()
-        .chunks(16)
-        .map(|chunk| chunk.to_vec())
-        .collect()
-  } else {
+//size
+#[tauri::command]
+fn next_chunk_split(editor: State<HexEditor>) -> Vec<Vec<u8>> {
+    if let Some(editor) = editor.lock().unwrap().as_mut() {
+        let next_chunk = editor.next_chunk().unwrap().0.clone();
+        return next_chunk.chunks(16).map(|chunk| chunk.to_vec()).collect::<Vec<Vec<u8>>>()
+    }
+    println!("Файл ещё не открыт");
     vec![]
-  };
 }
 
-
+#[tauri::command]
+fn prev_chunk(editor: State<HexEditor>) -> Vec<u8> {
+	if let Some(editor) = editor.lock().unwrap().as_mut() {
+		return editor.prev_chunk().unwrap().0.clone()
+	}
+	println!("Файл ещё не открыт");
+	vec![]
+}
 
 fn main() {
 
-  // let mut file_chunks = FileChunks::new("C:\\Users\\nikiy\\Documents\\FPSMonitor.txt", 16).unwrap();
-  // println!("{:?}", file_chunks.get_chunk_by_pos(0).unwrap());
-  // println!("{:?}", file_chunks.get_chunk_by_pos(10).unwrap());
-  //
-  // println!("{:?}", file_chunks.stream_position());
-  //
-  // println!("{:?}", file_chunks.get_chunk_by_pos(0).unwrap());
-  //
-  // println!("{:?}", file_chunks.next_chunk().unwrap());
-  // println!("{:?}", file_chunks.next_chunk().unwrap());
-  //
-  // println!("{:?}", file_chunks.stream_position().unwrap());
-  //
-  // println!("{:?}", file_chunks.pred_chunk().unwrap());
-  //
-  // println!("{:?}", file_chunks.stream_position());
+    // let mut file_chunks = FileChunks::new("C:\\Users\\nikiy\\Documents\\FPSMonitor.txt".into(), 4).unwrap();
+    // println!("Чанк по позиции 0: {:?}", file_chunks.get_chunk_by_pos(0).unwrap());
+    // println!("Чанк по позиции 10: {:?}", file_chunks.get_chunk_by_pos(10).unwrap());
+    //
+    // println!("Позиция стрима: {:?}", file_chunks.stream_position());
+    //
+    // println!("Чанк по позиции 0 {:?}", file_chunks.get_chunk_by_pos(0).unwrap());
+    //
+    // println!("Следующий чанк: {:?}", file_chunks.next_chunk().unwrap());
+    // println!("Следующий чанк: {:?}", file_chunks.next_chunk().unwrap());
+    //
+    // println!("Позиция стрима: {:?}", file_chunks.stream_position().unwrap());
+    //
+    // println!("Предыдущий чанк: {:?}", file_chunks.prev_chunk().unwrap());
+    //
+    // println!("Позиция стрима: {:?}", file_chunks.stream_position());
 
-  tauri::Builder::default()
-      .manage(Mutex::new(None::<OpenFile>))
-      .invoke_handler(tauri::generate_handler![open_file, get_file_bytes, get_file_str, get_bytes_chunks])
-      .any_thread()
-      .run(tauri::generate_context!())
-      .expect("error while running tauri application");
+    tauri::Builder::default()
+        .manage(Mutex::new(None::<FileChunks>))
+        .invoke_handler(tauri::generate_handler![open_file, get_chunk_by_pos, get_chunk_pos, next_chunk, prev_chunk, next_chunk_split])
+        .any_thread()
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+
 }

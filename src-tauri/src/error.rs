@@ -7,7 +7,8 @@ pub enum HexEditorError {
     IoError(io::Error),
     OsError(OsString),
     PathError,
-    StayFirstChunk
+    StayFirstChunk,
+    NoneBufferChunk
 }
 
 impl From<std::io::Error> for HexEditorError {
