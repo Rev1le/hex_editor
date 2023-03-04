@@ -1,0 +1,5 @@
+/node_modules
+/dist
+/.vs
+/pnpm-lock.yaml
+/package-lock.json
