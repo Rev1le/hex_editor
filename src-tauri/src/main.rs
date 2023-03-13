@@ -17,31 +17,6 @@ use std::{
 };
 use stream_file::FileChunks;
 
-// #[derive(Debug)]
-// struct HexEditor(Option<OpenFile>);
-//
-// impl HexEditor {
-//   pub fn new() -> Self {
-//     HexEditor(None)
-//   }
-//
-//   pub fn open_file(&mut self, path: &str) {
-//     self.0 = Some(OpenFile::new(Path::new(path)));
-//   }
-//
-//   pub fn get_open_file(&self) -> Option<&OpenFile> {
-//     self.0.as_ref()
-//   }
-//
-//   pub fn get_bytes(&self) -> Option<&Vec<u8>> {
-//     return if let Some(open_file) = self.0.as_ref() {
-//       Some(open_file.get_bytes())
-//     } else {
-//       None
-//     }
-//   }
-// }
-
 type HexEditor = Mutex<Option<FileChunks>>;
 
 #[derive(Debug, Clone)]
