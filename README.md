@@ -1,3 +1,7 @@
+## Description
+
+Hex editor developed with Tauri 1.2 
+
 ## Usage
 
 Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
